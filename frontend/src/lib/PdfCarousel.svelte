@@ -5,21 +5,21 @@
     .map((_, i) => i + 1);
 </script>
 
-<div class="carousel">
+<div class="pdf-editor">
   {#each cards as card (card)}
     <PdfCard {card}></PdfCard>
   {/each}
 </div>
 
 <style>
-  .carousel {
+  .pdf-editor {
     display: grid;
     grid-auto-flow: column;
     gap: 5px;
-    width: 50px;
+    width: 700px;
+    height: 120px;
     margin: 1rem 2rem;
+    overflow-y: scroll;
+    grid-area: 4 / 3 / 6 / 6;
   }
 </style>
-
-
-

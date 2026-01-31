@@ -8,8 +8,8 @@
 
 <style>
   .pdf-card {
-    width: 70px;
-    height: 120px;
+    width: 80px;
+    height: 100%;
     background-color: white;
     color: black;
   }

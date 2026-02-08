@@ -6,8 +6,8 @@ import type { RenderParameters } from "pdfjs-dist/types/src/display/api";
 // Configure worker
 PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-export function loadPDF(url: string): Effect.Effect<PDFJS.PDFDocumentProxy> {
-	const loadingTask = PDFJS.getDocument(url);
+export function loadPDF(src: string | URL | ArrayBuffer): Effect.Effect<PDFJS.PDFDocumentProxy> {
+	const loadingTask = PDFJS.getDocument(src);
 	return Effect.promise<PDFJS.PDFDocumentProxy>(() => loadingTask.promise)
 }
 

@@ -6,16 +6,27 @@ import type { RenderParameters } from "pdfjs-dist/types/src/display/api";
 // Configure worker
 PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-export default function loadPDFWithEffect(node: HTMLCanvasElement, url: string) {
+export function loadPDF(url: string): Effect.Effect<PDFJS.PDFDocumentProxy> {
+	const loadingTask = PDFJS.getDocument(url);
+	return Effect.promise<PDFJS.PDFDocumentProxy>(() => loadingTask.promise)
+}
+
+export function getPage(pdf: PDFJS.PDFDocumentProxy, pageIdx: number): Effect.Effect<PDFJS.PDFPageProxy> {
+	return Effect.promise<PDFJS.PDFPageProxy>(() => pdf.getPage(pageIdx));
+}
+
+export function renderPage(
+	node: HTMLCanvasElement,
+	params: {
+		pdf: PDFJS.PDFDocumentProxy;
+		pageNum: number;
+	}
+) {
 	const render = async () => {
-		const loadingTask = PDFJS.getDocument(url);
-		const pdf = await Effect.runPromise(
-			Effect.promise<PDFJS.PDFDocumentProxy>(() => loadingTask.promise)
-		);
-		const page = await Effect.runPromise(
-			Effect.promise<PDFJS.PDFPageProxy>(() => pdf.getPage(3))
-		);
+		const { pdf, pageNum } = params;
+		const page = await Effect.runPromise(getPage(pdf, pageNum));
 		const scale = 1;
+
 		const viewport = page.getViewport({ scale });
 
 		const context = node.getContext("2d");
@@ -33,9 +44,10 @@ export default function loadPDFWithEffect(node: HTMLCanvasElement, url: string) 
 		const render = Effect.promise(() => page.render(renderContext).promise);
 		await Effect.runPromise(render);
 	}
-
 	render();
 	return {
 		destroy() { }
 	};
 }
+
+

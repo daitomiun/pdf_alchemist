@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { loadPDF, renderPage } from "$lib/pdfjs";
+	import { loadPDF } from "$lib/pdfjs";
 	import { Effect } from "effect";
 	import type { PDFDocumentProxy } from "pdfjs-dist";
+	import PDFCarousel from "./PDFCarousel.svelte";
 
 	let files = $state<FileList | null>(null);
 
@@ -31,12 +32,5 @@
 	<input id="pdf-upload" bind:files type="file" accept=".pdf" />
 {/if}
 {#if files && pdf != undefined}
-	<div class="pdf-carousel">
-		{#each pageNumbers as pageNum}
-			<div class="page">
-				<h3>Page {pageNum}</h3>
-				<canvas use:renderPage={{ pdf, pageNum, scale: 1 }}></canvas>
-			</div>
-		{/each}
-	</div>
+	<PDFCarousel {pdf} scale={1} {pageNumbers}></PDFCarousel>
 {/if}

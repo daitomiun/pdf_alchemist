@@ -20,12 +20,12 @@ export function renderPage(
 	params: {
 		pdf: PDFJS.PDFDocumentProxy;
 		pageNum: number;
+		scale: number;
 	}
 ) {
 	const render = async () => {
-		const { pdf, pageNum } = params;
+		const { pdf, pageNum, scale } = params;
 		const page = await Effect.runPromise(getPage(pdf, pageNum));
-		const scale = 1;
 
 		const viewport = page.getViewport({ scale });
 

@@ -10,6 +10,5 @@
 </script>
 
 <div class="page">
-	<h3>Page {pageNum}</h3>
 	<canvas use:renderPage={{ pdf, pageNum, scale }}></canvas>
 </div>

@@ -32,5 +32,5 @@
 	<input id="pdf-upload" bind:files type="file" accept=".pdf" />
 {/if}
 {#if files && pdf != undefined}
-	<PDFCarousel {pdf} scale={1} {pageNumbers}></PDFCarousel>
+	<PDFCarousel {pdf} scale={0.1} {pageNumbers}></PDFCarousel>
 {/if}

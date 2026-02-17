@@ -58,10 +58,13 @@
 		display: flex;
 		width: 700px;
 		border: 5px black;
+		overflow-x: auto;
+		white-space: nowrap;
 	}
 	.card {
 		width: 100%;
 		height: 100%;
+		margin: 5px;
 	}
 	.pdf-widget {
 		width: 100%;

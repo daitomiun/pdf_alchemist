@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PDFDocumentProxy } from "pdfjs-dist";
 	import { renderPage } from "$lib/pdfjs";
+	import { pdfManager } from "$lib/state/state.svelte";
 	interface Props {
 		pdf: PDFDocumentProxy;
 		pageNum: number;
@@ -10,5 +11,8 @@
 </script>
 
 <div class="page">
-	<canvas use:renderPage={{ pdf, pageNum, scale }}></canvas>
+	<canvas
+		onclick={() => pdfManager.setCurrentPage(pageNum)}
+		use:renderPage={{ pdf, pageNum, scale }}
+	></canvas>
 </div>

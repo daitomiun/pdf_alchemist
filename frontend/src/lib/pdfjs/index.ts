@@ -23,8 +23,10 @@ export function renderPage(
 		scale: number;
 	}
 ) {
+	let currentParams = params;
+
 	const render = async () => {
-		const { pdf, pageNum, scale } = params;
+		const { pdf, pageNum, scale } = currentParams;
 		const page = await Effect.runPromise(getPage(pdf, pageNum));
 
 		const viewport = page.getViewport({ scale });
@@ -46,6 +48,10 @@ export function renderPage(
 	}
 	render();
 	return {
+		update(newParams: { pdf: PDFJS.PDFDocumentProxy, pageNum: number, scale: number }) {
+			currentParams = newParams;
+			render();
+		},
 		destroy() { }
 	};
 }

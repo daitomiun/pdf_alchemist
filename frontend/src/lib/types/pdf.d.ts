@@ -1,7 +1,8 @@
 
 export type Pdf = {
 	Pdf: PDFDocumentProxy;
-	numPages: number;
+	scale: number;
+	pageNumbers: number[]
 };
 
 export enum ActionType {
@@ -9,6 +10,12 @@ export enum ActionType {
 	Swap = "Swap",
 	Delete = "Delete",
 	Add = "Add",
+}
+
+export enum PdfDefinition {
+	low = 0.1,
+	medium = 0.5,
+	high = 3,
 }
 
 export type PdfCommand<TPayload = unknown> = {

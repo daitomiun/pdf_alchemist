@@ -8,11 +8,13 @@
 		scale: number;
 	}
 	let { pdf, pageNum, scale }: Props = $props();
+
+	let containerWidth = $state(0);
 </script>
 
-<div class="page">
+<div class="page" bind:clientWidth={containerWidth}>
 	<canvas
 		onclick={() => pdfManager.setCurrentPage(pageNum)}
-		use:renderPage={{ pdf, pageNum, scale }}
+		use:renderPage={{ pdf, pageNum, scale, containerWidth }}
 	></canvas>
 </div>

@@ -21,6 +21,7 @@ export function renderPage(
 		pdf: PDFJS.PDFDocumentProxy;
 		pageNum: number;
 		scale: number;
+		containerWidth: number;
 	}
 ) {
 	let currentParams = params;
@@ -28,14 +29,20 @@ export function renderPage(
 	const render = async () => {
 		const { pdf, pageNum, scale } = currentParams;
 		const page = await Effect.runPromise(getPage(pdf, pageNum));
+		const unscaledViewport = page.getViewport({ scale: 1 });
 
-		const viewport = page.getViewport({ scale });
+		const fitScale = currentParams.containerWidth / unscaledViewport.width;
+		const internalScale = fitScale * scale;
+		const viewport = page.getViewport({ scale: internalScale });
 
 		const context = node.getContext("2d");
 		if (!context) return;
 
 		node.height = viewport.height;
 		node.width = viewport.width;
+
+		node.style.width = `${currentParams.containerWidth}px`;
+		node.style.height = `${unscaledViewport.height * fitScale}px`;
 
 		const renderContext: RenderParameters = {
 			canvas: node,
@@ -48,7 +55,7 @@ export function renderPage(
 	}
 	render();
 	return {
-		update(newParams: { pdf: PDFJS.PDFDocumentProxy, pageNum: number, scale: number }) {
+		update(newParams: { pdf: PDFJS.PDFDocumentProxy, pageNum: number, scale: number, containerWidth: number }) {
 			currentParams = newParams;
 			render();
 		},

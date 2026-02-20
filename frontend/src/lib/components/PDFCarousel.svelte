@@ -47,6 +47,26 @@
 				ondragenter={() => swapWith(pageNum)}
 			>
 				{pageNum}
+				<button
+					aria-label="delete-page"
+					type="button"
+					class="text-white bg-danger box-border border border-transparent hover:bg-danger-strong focus:ring-4 focus:ring-danger-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke-width="1.5"
+						stroke="currentColor"
+						class="size-6"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M6 18 18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
 			</div>
 			<PDFPage {pdf} {pageNum} {scale}></PDFPage>
 		</div>
@@ -55,11 +75,13 @@
 
 <style>
 	.pdf-carousel {
+		grid-area: 4 / 3 / 6 / 6;
 		display: flex;
-		width: 700px;
+		width: 100%;
 		border: 5px black;
 		overflow-x: auto;
 		white-space: nowrap;
+		background-color: aliceblue;
 	}
 	.card {
 		width: 100%;

@@ -5,11 +5,16 @@
 	let pdf = $derived(pdfManager.current);
 	let currentPage = $derived(pdfManager.currentPage);
 	let containerWidth = $state(0);
-	$inspect(currentPage);
-	$inspect(pdf);
+
+	$effect(() => {
+		const isPageVisible = pdfManager.pageNumArr.includes(currentPage);
+		if (!isPageVisible) {
+			pdfManager.setCurrentPage(pdfManager.pageNumArr[0]);
+		}
+	});
 </script>
 
-{#if pdf != undefined}
+{#if pdf != undefined && pdfManager.pageNumArr.length > 0}
 	<div class="pdf-viewer" bind:clientWidth={containerWidth}>
 		<canvas
 			use:renderPage={{

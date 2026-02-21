@@ -3,7 +3,6 @@ import * as PDFJS from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type { RenderParameters } from "pdfjs-dist/types/src/display/api";
 
-// Configure worker
 PDFJS.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export function loadPDF(src: string | URL | ArrayBuffer): Effect.Effect<PDFJS.PDFDocumentProxy> {

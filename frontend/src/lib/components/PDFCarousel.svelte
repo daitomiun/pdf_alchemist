@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { pdfManager } from "$lib/state/state.svelte";
 	import PDFPage from "./PDFPage.svelte";
 	import type { PDFDocumentProxy } from "pdfjs-dist";
 	import { flip } from "svelte/animate";
@@ -6,37 +7,17 @@
 	type props = {
 		pdf: PDFDocumentProxy;
 		scale: number;
-		pageNumbers: number[];
 	};
-	let { pdf, scale, pageNumbers }: props = $props();
+	let { pdf, scale }: props = $props();
 
+	$inspect(pdfManager.pageNumArr);
 	const dragDuration = 300;
 	let draggingCard: number | null = null;
 	let animatingCards = new Set<number>();
-
-	function swapWith(card: number) {
-		if (
-			draggingCard === null ||
-			draggingCard === card ||
-			animatingCards.has(card)
-		)
-			return;
-
-		const a = pageNumbers.indexOf(draggingCard);
-		const b = pageNumbers.indexOf(card);
-		if (a < 0 || b < 0) return;
-
-		const next = [...pageNumbers];
-		[next[a], next[b]] = [next[b], next[a]];
-		pageNumbers = next;
-
-		animatingCards.add(card);
-		setTimeout(() => animatingCards.delete(card), dragDuration);
-	}
 </script>
 
 <div class="pdf-carousel">
-	{#each pageNumbers as pageNum (pageNum)}
+	{#each pdfManager.pageNumArr as pageNum (pageNum)}
 		<div class="card" animate:flip={{ duration: dragDuration }}>
 			<div
 				role="list"
@@ -44,13 +25,14 @@
 				draggable="true"
 				ondragstart={() => (draggingCard = pageNum)}
 				ondragend={() => (draggingCard = null)}
-				ondragenter={() => swapWith(pageNum)}
+				ondragenter={() =>
+					pdfManager.swap(animatingCards, draggingCard, pageNum, dragDuration)}
 			>
-				{pageNum}
+				<span>{pageNum}</span>
 				<button
+					onclick={() => pdfManager.delete(pageNum)}
 					aria-label="delete-page"
 					type="button"
-					class="text-white bg-danger box-border border border-transparent hover:bg-danger-strong focus:ring-4 focus:ring-danger-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-2.5 focus:outline-none"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -58,7 +40,7 @@
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="size-6"
+						class="size-4"
 					>
 						<path
 							stroke-linecap="round"
@@ -92,5 +74,8 @@
 		width: 100%;
 		height: 20px;
 		background-color: gray;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 </style>

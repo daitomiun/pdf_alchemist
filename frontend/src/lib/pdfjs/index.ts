@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Cause, Effect, Exit } from "effect";
 import * as PDFJS from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type { RenderParameters } from "pdfjs-dist/types/src/display/api";
@@ -24,10 +24,22 @@ export function renderPage(
 	}
 ) {
 	let currentParams = params;
+	let activeTask: PDFJS.RenderTask | null = null;
+	let currentId = 0;
 
 	const render = async () => {
-		const { pdf, pageNum, scale } = currentParams;
+		const { pdf, pageNum, scale, containerWidth } = currentParams;
+
+		const callId = ++currentId;
+		if (activeTask) {
+			activeTask.cancel();
+			activeTask = null;
+		}
+
 		const page = await Effect.runPromise(getPage(pdf, pageNum));
+
+		if (callId !== currentId) return; // INFO: stops svelte from rerendering the page, skipping the 'Use different canvas or ensure previous operations were cancelled or completed' error
+
 		const unscaledViewport = page.getViewport({ scale: 1 });
 
 		const fitScale = currentParams.containerWidth / unscaledViewport.width;
@@ -40,7 +52,7 @@ export function renderPage(
 		node.height = viewport.height;
 		node.width = viewport.width;
 
-		node.style.width = `${currentParams.containerWidth}px`;
+		node.style.width = `${containerWidth}px`;
 		node.style.height = `${unscaledViewport.height * fitScale}px`;
 
 		const renderContext: RenderParameters = {
@@ -48,9 +60,29 @@ export function renderPage(
 			canvasContext: context,
 			viewport,
 		};
+		const renderTask = page.render(renderContext);
+		activeTask = renderTask;
 
-		const render = Effect.promise(() => page.render(renderContext).promise);
-		await Effect.runPromise(render);
+		const renderEffect = Effect.promise(() => renderTask.promise);
+
+		const result = await Effect.runPromiseExit(renderEffect);
+
+		activeTask = null;
+
+		if (Exit.isFailure(result)) {
+			const cause = result.cause;
+			if (Cause.isFailType(cause)) {
+				const error: any = cause.error;
+				if (error.name === "RenderingCancelledException") {
+					console.log("Safe: Previous render was cancelled.");
+				} else {
+					console.error("The render failed with:", error);
+				}
+			}
+			else if (Cause.isDieType(cause)) {
+				console.error("The effect 'died' (crashed):", cause.defect);
+			}
+		}
 	}
 	render();
 	return {
@@ -58,7 +90,10 @@ export function renderPage(
 			currentParams = newParams;
 			render();
 		},
-		destroy() { }
+		destroy() {
+			currentId++;
+			if (activeTask) activeTask.cancel();
+		}
 	};
 }
 

@@ -5,11 +5,6 @@ class PdfManager {
 	currentPage = $state(1);
 	pageNumArr = $state<number[]>([]);
 
-	resetPages() {
-		this.pageNumArr = Array.from({ length: this.current!.numPages }, (_, i) => i + 1)
-
-	}
-
 	setPdf(doc: PDFDocumentProxy) {
 		this.current = doc;
 	}

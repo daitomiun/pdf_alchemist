@@ -15,27 +15,36 @@
 </script>
 
 {#if pdf != undefined && pdfManager.pageNumArr.length > 0}
-	<div class="pdf-viewer" bind:clientWidth={containerWidth}>
-		<canvas
-			use:renderPage={{
-				pdf: pdf,
-				pageNum: currentPage,
-				scale: 2,
-				containerWidth: containerWidth,
-			}}
-		></canvas>
+	<div class="pdf-padding">
+		<div class="pdf-viewer" bind:clientWidth={containerWidth}>
+			<canvas
+				use:renderPage={{
+					pdf: pdf,
+					pageNum: currentPage,
+					scale: 2,
+					containerWidth: containerWidth,
+				}}
+			></canvas>
+		</div>
 	</div>
 {:else}
 	<div class="error">could not render the page</div>
 {/if}
 
 <style>
-	.pdf-viewer {
-		grid-area: 1 / 1 / 6 / 3;
-		border: 5px solid black;
+	.pdf-padding {
+		width: 100%;
+		height: 100%;
+		padding: 1rem;
 		background-color: lightseagreen;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		grid-area: 1 / 1 / 6 / 3;
+	}
+	.pdf-viewer {
+		border: 5px solid black;
+		width: 100%;
+		height: 80%;
 	}
 </style>

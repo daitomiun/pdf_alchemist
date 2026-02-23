@@ -79,9 +79,6 @@ export function renderPage(
 					console.error("The render failed with:", error);
 				}
 			}
-			else if (Cause.isDieType(cause)) {
-				console.error("The effect 'died' (crashed):", cause.defect);
-			}
 		}
 	}
 	render();

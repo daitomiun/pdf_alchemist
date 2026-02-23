@@ -42,3 +42,4 @@ class PdfManager {
 }
 
 export const pdfManager = new PdfManager()
+

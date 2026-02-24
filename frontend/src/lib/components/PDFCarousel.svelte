@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from "$app/stores";
 	import { pdfManager } from "$lib/state/state.svelte";
 	import PDFPage from "./PDFPage.svelte";
 	import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -17,58 +18,82 @@
 </script>
 
 <div class="pdf-carousel">
-	{#each pdfManager.pageNumArr as pageNum (pageNum)}
-		<div class="card" animate:flip={{ duration: dragDuration }}>
-			<div
-				role="list"
-				class="pdf-widget"
-				draggable="true"
-				ondragstart={() => (draggingCard = pageNum)}
-				ondragend={() => (draggingCard = null)}
-				ondragenter={() =>
-					pdfManager.swap(animatingCards, draggingCard, pageNum, dragDuration)}
-			>
-				<span>{pageNum}</span>
-				<button
-					onclick={() => pdfManager.delete(pageNum)}
-					aria-label="delete-page"
-					type="button"
+	{#each pdfManager.pageNumArr as pageNum, i (pageNum)}
+		<div class="pdf-group" animate:flip={{ duration: dragDuration }}>
+			<div class="card">
+				<div
+					role="list"
+					class="pdf-widget"
+					draggable="true"
+					ondragstart={() => (draggingCard = pageNum)}
+					ondragend={() => (draggingCard = null)}
+					ondragenter={() =>
+						pdfManager.swap(
+							animatingCards,
+							draggingCard,
+							pageNum,
+							dragDuration,
+						)}
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="size-4"
+					<span>{pageNum}</span>
+					<button
+						onclick={() => pdfManager.delete(pageNum)}
+						aria-label="delete-page"
+						type="button"
 					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M6 18 18 6M6 6l12 12"
-						/>
-					</svg>
-				</button>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke-width="1.5"
+							stroke="currentColor"
+							class="size-4"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M6 18 18 6M6 6l12 12"
+							/>
+						</svg>
+					</button>
+				</div>
+				<PDFPage {pdf} {pageNum} {scale}></PDFPage>
 			</div>
-			<PDFPage {pdf} {pageNum} {scale}></PDFPage>
+
+			{#if i < pdfManager.pageNumArr.length - 1}
+				{@const nextNeighbor = pdfManager.pageNumArr[i + 1]}
+				<div class="split-spacer">{nextNeighbor}</div>
+			{/if}
 		</div>
 	{/each}
 </div>
 
 <style>
+	.pdf-group {
+		display: flex;
+	}
+	.split-spacer {
+		height: 100%;
+		border: 1px dashed black;
+	}
 	.pdf-carousel {
 		grid-area: 4 / 3 / 6 / 6;
 		display: flex;
 		width: 100%;
 		border: 5px black;
 		overflow-x: auto;
+		overflow-y: hidden;
 		white-space: nowrap;
 		background-color: aliceblue;
 	}
 	.card {
 		width: 100%;
+		max-width: 100px;
 		height: 100%;
 		margin: 5px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
 	}
 	.pdf-widget {
 		width: 100%;

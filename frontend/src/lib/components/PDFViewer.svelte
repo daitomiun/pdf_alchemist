@@ -35,7 +35,7 @@
 	.pdf-padding {
 		width: 100%;
 		height: 100%;
-		padding: 1rem;
+		padding: 3.5rem;
 		background-color: lightseagreen;
 		display: flex;
 		align-items: center;
@@ -45,6 +45,5 @@
 	.pdf-viewer {
 		border: 5px solid black;
 		width: 100%;
-		height: 80%;
 	}
 </style>

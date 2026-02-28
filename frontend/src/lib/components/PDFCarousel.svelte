@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from "$app/stores";
 	import { pdfManager } from "$lib/state/state.svelte";
 	import PDFPage from "./PDFPage.svelte";
 	import type { PDFDocumentProxy } from "pdfjs-dist";

@@ -5,6 +5,7 @@ class PdfManager {
 	current = $state<PDFDocumentProxy>();
 	currentPage = $state(1);
 	pageNumArr = $state<number[]>([]);
+	pendingCuts = $state<Map<string, number[]>>();
 
 	#undoStack: Command[] = []
 	#redoStack: Command[] = []
@@ -31,7 +32,15 @@ class PdfManager {
 			case ActionType.RESET:
 				this.#undoStack = [];
 				this.#redoStack = [];
+				this.pendingCuts = new Map();
 				this.pageNumArr = Array.from({ length: this.current!.numPages }, (_, i) => i + 1);
+				break;
+			case ActionType.SPLIT:
+				// TODO: 1. get the splitAt (ie: nextNeighbor) and page id
+				// 2. From the splitAt read backwards on the page list (ie: list -> [1,2,3,4,5]; splitAt -> 3; split group [1,2] )
+				// 3. set the push with a new string id map
+				// 4. call and execute the action from the user action change
+				// NOTE: the UI should show a hightlight background color showing the distinction, after each render the list will update the styles for the desired group
 				break;
 		}
 	}
@@ -74,6 +83,8 @@ class PdfManager {
 		animatingCards.add(card);
 		setTimeout(() => animatingCards.delete(card), dragDuration);
 	}
+
+	split() { }
 }
 
 export const pdfManager = new PdfManager()

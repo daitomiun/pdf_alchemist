@@ -62,7 +62,13 @@
 			{#if i < pdfManager.pageNumArr.length - 1}
 				{@const nextNeighbor = pdfManager.pageNumArr[i + 1]}
 				<div class="spacer-group">
-					<div class="split-spacer">{nextNeighbor}</div>
+					<div
+						aria-label="split-pages"
+						class="split-spacer"
+						onmousedown={() => pdfManager.split(nextNeighbor)}
+					>
+						{nextNeighbor}
+					</div>
 				</div>
 			{/if}
 		</div>

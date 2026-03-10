@@ -9,7 +9,6 @@
 	let files = $state<FileList | null>(null);
 
 	let fileBuffer: ArrayBuffer;
-	let numPages = 0;
 	$effect(() => {
 		if (files && files.length > 0) {
 			const file = files[0];
@@ -19,17 +18,11 @@
 				);
 				let pdf = await Effect.runPromise(loadPDF(fileBuffer));
 				pdfManager.setPdf(pdf);
-				numPages = pdf.numPages;
+				pdfManager.setInitialPageArr();
 			}
 			load();
 		}
 	});
-
-	$inspect(pdfManager.currentPage);
-
-	const pageNumbers = $derived(
-		Array.from({ length: numPages }, (_, i) => i + 1),
-	);
 </script>
 
 {#if pdfManager.current == undefined}
@@ -37,18 +30,28 @@
 {/if}
 {#if files && pdfManager.current != undefined}
 	<div class="container-grid">
-		<div class="new-elements"></div>
+		<div class="new-elements">
+			<button
+				aria-label="reset-changes"
+				type="button"
+				class="text-white bg-orange-500 box-border border border-transparent hover:bg-warning-strong focus:ring-4 focus:ring-warning-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-5 focus:outline-none"
+				onclick={() => pdfManager.setInitialPageArr()}
+			>
+				Reset changes
+			</button>
+		</div>
 		<PDFViewer></PDFViewer>
-		<PDFCarousel pdf={pdfManager.current} scale={0.8} {pageNumbers}
-		></PDFCarousel>
+		<PDFCarousel pdf={pdfManager.current} scale={0.8}></PDFCarousel>
 	</div>
 {/if}
 
 <style>
 	.container-grid {
+		height: 100vh;
+		overflow: hidden;
 		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		grid-template-rows: repeat(5, 1fr);
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-rows: repeat(auto-fit, minmax(200px, 1fr));
 		grid-column-gap: 0px;
 		grid-row-gap: 0px;
 	}

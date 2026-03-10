@@ -46,7 +46,7 @@ class PdfManager {
 				console.log(availablePages)
 
 				const groupList = this.pageNumArr.slice(availablePages[0], cmd.splitAt - 1);
-				console.log(groupList)
+				console.log(`groupList -> ${groupList}`)
 				// TODO: 1. get the splitAt (ie: nextNeighbor) and page id
 				// 2. From the splitAt read backwards on the page list (ie: list -> [1,2,3,4,5]; splitAt -> 3; split group [1,2] )
 				// 3. set the push with a new string id map

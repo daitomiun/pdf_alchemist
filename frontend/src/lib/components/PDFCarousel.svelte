@@ -59,7 +59,7 @@
 				<PDFPage {pdf} {pageNum} {scale}></PDFPage>
 			</div>
 
-			{#if i < pdfManager.pageNumArr.length - 1}
+			{#if i < pdfManager.pageNumArr.length - 1 && pdfManager.pageNumArr.length > 1}
 				{@const nextNeighbor = pdfManager.pageNumArr[i + 1]}
 				<div class="spacer-group">
 					<div

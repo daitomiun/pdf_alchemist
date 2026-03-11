@@ -45,13 +45,14 @@ class PdfManager {
 				// INFO: All the available pages that are not in the split groups  
 				console.log(availablePages)
 
-				const groupList = this.pageNumArr.slice(availablePages[0], cmd.splitAt - 1);
+				const cut = availablePages.indexOf(this.pageNumArr[cmd.splitAt - 1]);
+				console.log(`cut --> ${cut}`)
+				const groupList = availablePages.slice(0, cut);
 				console.log(`groupList -> ${groupList}`)
 				// TODO: 1. get the splitAt (ie: nextNeighbor) and page id
 				// 2. From the splitAt read backwards on the page list (ie: list -> [1,2,3,4,5]; splitAt -> 3; split group [1,2] )
 				// 3. set the push with a new string id map
 				// 4. call and execute the action from the user action change
-				//
 				// NOTE: the UI should show a hightlight background color showing the distinction, after each render the list will update the styles for the desired group
 				this.pendingCuts!.set(cmd.groupId, groupList)
 				console.log(this.pendingCuts)

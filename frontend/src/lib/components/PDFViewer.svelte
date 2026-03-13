@@ -2,33 +2,37 @@
 	import { renderPage } from "$lib/pdfjs";
 	import { pdfManager } from "$lib/state/state.svelte";
 
-	let pdf = $derived(pdfManager.current);
-	let currentPage = $derived(pdfManager.currentPage);
+	let pdf = $derived(pdfManager.pdf.proxy);
+	let currentPage = $derived(pdfManager.pdf.currentPage);
 	let containerWidth = $state(0);
 
 	$effect(() => {
-		const isPageVisible = pdfManager.pageNumArr.includes(currentPage);
+		const isPageVisible = pdfManager.pdf.pages.some(
+			(p) => p.pageNum === currentPage,
+		);
 		if (!isPageVisible) {
-			pdfManager.setCurrentPage(pdfManager.pageNumArr[0]);
+			pdfManager.setCurrentPage(
+				pdfManager.pdf.pages.findIndex((p) => p.pageNum === 1),
+			);
 		}
 	});
 </script>
 
-{#if pdf != undefined && pdfManager.pageNumArr.length > 0}
+{#if pdf != undefined && pdfManager.pdf.pages.length > 0}
 	<div class="pdf-padding">
 		<div class="pdf-viewer" bind:clientWidth={containerWidth}>
 			<canvas
 				use:renderPage={{
 					pdf: pdf,
 					pageNum: currentPage,
-					scale: 2,
+					scale: pdfManager.pdf.carouselScale,
 					containerWidth: containerWidth,
 				}}
 			></canvas>
 		</div>
 	</div>
 {:else}
-	<div class="error">could not render the page</div>
+	<div class="error">There's no more pages :(</div>
 {/if}
 
 <style>

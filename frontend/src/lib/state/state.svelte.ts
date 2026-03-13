@@ -9,6 +9,15 @@ class PdfManager {
 	pageNumArr = $state<number[]>([]);
 	pendingCuts = $state<Map<string, number[]>>();
 
+	pdf = $state<Pdf>({
+		pages: [],
+		carouselScale: 0.8,
+		viewerScale: 2,
+		startCut: 0,
+		endCut: 0,
+		currentPage: 1,
+	});
+
 	#undoStack: Command[] = []
 	#redoStack: Command[] = []
 
@@ -35,7 +44,10 @@ class PdfManager {
 				this.#undoStack = [];
 				this.#redoStack = [];
 				this.pendingCuts = new Map();
+				this.pdf?.carouselScale
 				this.pageNumArr = Array.from({ length: this.current!.numPages }, (_, i) => i + 1);
+
+
 				break;
 			case ActionType.SPLIT:
 				const groupedPages = new Set(
@@ -62,13 +74,22 @@ class PdfManager {
 
 
 	setPdf(doc: PDFDocumentProxy) {
-		this.current = doc;
+		this.pdf.proxy = doc;
+		this.pdf.pages = Array.from(
+			{ length: this.current!.numPages },
+			(_, i) => ({
+				id: generate(),
+				pageNum: i + 1,
+				groupId: '',
+				scale: this.pdf.carouselScale,
+			})
+		);
 	}
 	setCurrentPage(pageNum: number) {
 		this.currentPage = pageNum;
 	}
 	setInitialPageArr() {
-		this.execute({ type: ActionType.RESET })
+		this.execute({ type: ActionType.RESET, carouselScale: 0.8, viewerScale: 2 })
 	}
 
 	delete(page: number) {
@@ -110,4 +131,21 @@ class PdfManager {
 }
 
 export const pdfManager = new PdfManager()
+
+export type Pdf = {
+	proxy?: PDFDocumentProxy;
+	pages: Page[];
+	carouselScale: number;
+	viewerScale: number;
+	currentPage: number;
+	startCut: number;
+	endCut: number;
+}
+
+type Page = {
+	id: string;
+	pageNum: number;
+	groupId: string;
+	scale: number;
+}
 

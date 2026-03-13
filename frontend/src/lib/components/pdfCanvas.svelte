@@ -25,10 +25,10 @@
 	});
 </script>
 
-{#if pdfManager.current == undefined}
+{#if pdfManager.pdf.proxy == undefined}
 	<input id="pdf-upload" bind:files type="file" accept=".pdf" />
 {/if}
-{#if files && pdfManager.current != undefined}
+{#if files && pdfManager.pdf.proxy != undefined}
 	<div class="container-grid">
 		<div class="new-elements">
 			<button
@@ -41,7 +41,7 @@
 			</button>
 		</div>
 		<PDFViewer></PDFViewer>
-		<PDFCarousel pdf={pdfManager.current} scale={0.8}></PDFCarousel>
+		<PDFCarousel></PDFCarousel>
 	</div>
 {/if}
 

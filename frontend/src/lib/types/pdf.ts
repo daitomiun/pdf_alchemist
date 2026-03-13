@@ -11,5 +11,5 @@ export type Command =
 	| { type: ActionType.SWAP; pageIdA: number; pageIdB: number }
 	| { type: ActionType.SPLIT; groupId: string; splitAt: number }
 	| { type: ActionType.ADD; sourceDoc: string; sourcePage: number; insertAt: number }
-	| { type: ActionType.RESET };
+	| { type: ActionType.RESET; carouselScale: number; viewerScale: number };
 

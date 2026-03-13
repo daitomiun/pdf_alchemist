@@ -1,42 +1,35 @@
 <script lang="ts">
 	import { pdfManager } from "$lib/state/state.svelte";
 	import PDFPage from "./PDFPage.svelte";
-	import type { PDFDocumentProxy } from "pdfjs-dist";
 	import { flip } from "svelte/animate";
 
-	type props = {
-		pdf: PDFDocumentProxy;
-		scale: number;
-	};
-	let { pdf, scale }: props = $props();
-
-	$inspect(pdfManager.pageNumArr);
+	$inspect(pdfManager.pdf.pages);
 	const dragDuration = 300;
 	let draggingCard: number | null = null;
 	let animatingCards = new Set<number>();
 </script>
 
 <div class="pdf-carousel">
-	{#each pdfManager.pageNumArr as pageNum, i (pageNum)}
+	{#each pdfManager.pdf.pages as page, i (page)}
 		<div class="pdf-group" animate:flip={{ duration: dragDuration }}>
 			<div class="card">
 				<div
 					role="list"
 					class="pdf-widget"
 					draggable="true"
-					ondragstart={() => (draggingCard = pageNum)}
+					ondragstart={() => (draggingCard = page.pageNum)}
 					ondragend={() => (draggingCard = null)}
 					ondragenter={() =>
 						pdfManager.swap(
 							animatingCards,
 							draggingCard,
-							pageNum,
+							page.pageNum,
 							dragDuration,
 						)}
 				>
-					<span>{pageNum}</span>
+					<span>{page.pageNum}</span>
 					<button
-						onclick={() => pdfManager.delete(pageNum)}
+						onclick={() => pdfManager.delete(page.pageNum)}
 						aria-label="delete-page"
 						type="button"
 					>
@@ -56,11 +49,15 @@
 						</svg>
 					</button>
 				</div>
-				<PDFPage {pdf} {pageNum} {scale}></PDFPage>
+				<PDFPage
+					pdf={pdfManager.pdf.proxy}
+					pageNum={page.pageNum}
+					scale={page.scale}
+				></PDFPage>
 			</div>
 
-			{#if i < pdfManager.pageNumArr.length - 1 && pdfManager.pageNumArr.length > 1}
-				{@const nextNeighbor = pdfManager.pageNumArr[i + 1]}
+			{#if i < pdfManager.pdf.pages.length - 1 && pdfManager.pdf.pages.length > 1}
+				{@const nextNeighbor = pdfManager.pdf.pages[i + 1]?.pageNum}
 				<div class="spacer-group">
 					<div
 						aria-label="split-pages"

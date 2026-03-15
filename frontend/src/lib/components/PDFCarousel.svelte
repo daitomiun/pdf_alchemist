@@ -1,35 +1,41 @@
 <script lang="ts">
-	import { pdfManager } from "$lib/state/state.svelte";
+	import { pdfManager, type Page } from "$lib/state/state.svelte";
 	import PDFPage from "./PDFPage.svelte";
 	import { flip } from "svelte/animate";
 
-	$inspect(pdfManager.pdf.pages);
 	const dragDuration = 300;
-	let draggingCard: number | null = null;
-	let animatingCards = new Set<number>();
+	let draggingCard: Page | null = null;
+	let animatingCards = new Set<Page>();
 </script>
 
 <div class="pdf-carousel">
 	{#each pdfManager.pdf.pages as page, i (page)}
 		<div class="pdf-group" animate:flip={{ duration: dragDuration }}>
+			{#if i <= pdfManager.pdf.pages.length && pdfManager.pdf.pages.length > 1}
+				{@const nextNeighbor = pdfManager.pdf.pages[i]}
+				<div class="spacer-group">
+					<div
+						aria-label="split-pages"
+						class="split-spacer"
+						onmousedown={() => pdfManager.split(i)}
+					>
+						-{nextNeighbor.pageNum}-
+					</div>
+				</div>
+			{/if}
 			<div class="card">
 				<div
 					role="list"
 					class="pdf-widget"
 					draggable="true"
-					ondragstart={() => (draggingCard = page.pageNum)}
+					ondragstart={() => (draggingCard = page)}
 					ondragend={() => (draggingCard = null)}
 					ondragenter={() =>
-						pdfManager.swap(
-							animatingCards,
-							draggingCard,
-							page.pageNum,
-							dragDuration,
-						)}
+						pdfManager.swap(animatingCards, draggingCard, page, dragDuration)}
 				>
 					<span>{page.pageNum}</span>
 					<button
-						onclick={() => pdfManager.delete(page.pageNum)}
+						onclick={() => pdfManager.delete(page)}
 						aria-label="delete-page"
 						type="button"
 					>
@@ -55,16 +61,14 @@
 					scale={page.scale}
 				></PDFPage>
 			</div>
-
-			{#if i < pdfManager.pdf.pages.length - 1 && pdfManager.pdf.pages.length > 1}
-				{@const nextNeighbor = pdfManager.pdf.pages[i + 1]?.pageNum}
+			{#if i == pdfManager.pdf.pages.length - 1}
 				<div class="spacer-group">
 					<div
 						aria-label="split-pages"
 						class="split-spacer"
-						onmousedown={() => pdfManager.split(nextNeighbor)}
+						onmousedown={() => pdfManager.split(i + 1)}
 					>
-						{nextNeighbor}
+						{i + 1}
 					</div>
 				</div>
 			{/if}

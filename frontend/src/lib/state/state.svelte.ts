@@ -4,18 +4,14 @@ import { generate } from "short-uuid";
 
 
 class PdfManager {
-	current = $state<PDFDocumentProxy>();
-	currentPage = $state(1);
-	pageNumArr = $state<number[]>([]);
-	pendingCuts = $state<Map<string, number[]>>();
-
 	pdf = $state<Pdf>({
 		pages: [],
 		carouselScale: 0.8,
 		viewerScale: 2,
-		startCut: 0,
-		endCut: 0,
+		startCut: -1,
+		endCut: -1,
 		currentPage: 1,
+		pendingCuts: new Map()
 	});
 
 	#undoStack: Command[] = []
@@ -31,43 +27,41 @@ class PdfManager {
 	private applyCommand(cmd: Command) {
 		switch (cmd.type) {
 			case ActionType.DELETE:
-				this.pageNumArr = this.pageNumArr.filter((page) => page != cmd.pageId)
-				console.log(this.pageNumArr)
+				this.pdf.pages = this.pdf.pages.filter((page) => page.pageNum != cmd.pageId)
 				break;
 			case ActionType.SWAP:
 				if (cmd.pageIdA < 0 || cmd.pageIdB < 0) return;
-				const next = [...this.pageNumArr];
+				const next = [...this.pdf.pages];
 				[next[cmd.pageIdA], next[cmd.pageIdB]] = [next[cmd.pageIdB], next[cmd.pageIdA]];
-				this.pageNumArr = next;
+				this.pdf.pages = next;
 				break;
 			case ActionType.RESET:
 				this.#undoStack = [];
 				this.#redoStack = [];
-				this.pendingCuts = new Map();
-				this.pdf?.carouselScale
-				this.pageNumArr = Array.from({ length: this.current!.numPages }, (_, i) => i + 1);
-
+				this.pdf.pages = Array.from(
+					{ length: this.pdf.proxy!.numPages },
+					(_, i) => ({
+						id: i,
+						pageNum: i + 1,
+						groupId: '',
+						scale: this.pdf.carouselScale,
+					})
+				);
+				this.pdf.pendingCuts = new Map()
 
 				break;
 			case ActionType.SPLIT:
-				const groupedPages = new Set(
-					[...this.pendingCuts!.values()].flat()
-				)
-				const availablePages = this.pageNumArr.filter((p) => !groupedPages.has(p))
-				// INFO: All the available pages that are not in the split groups  
-				console.log(availablePages)
+				this.pdf.startCut = -1;
+				this.pdf.endCut = -1;
+				const from = Math.min(cmd.startCut, cmd.endCut);
+				const to = Math.max(cmd.startCut, cmd.endCut);
+				const selectedPages = this.pdf.pages.slice(from, to);
 
-				const cut = availablePages.indexOf(this.pageNumArr[cmd.splitAt - 1]);
-				console.log(`cut --> ${cut}`)
-				const groupList = availablePages.slice(0, cut);
-				console.log(`groupList -> ${groupList}`)
-				// TODO: 1. get the splitAt (ie: nextNeighbor) and page id
-				// 2. From the splitAt read backwards on the page list (ie: list -> [1,2,3,4,5]; splitAt -> 3; split group [1,2] )
-				// 3. set the push with a new string id map
-				// 4. call and execute the action from the user action change
+				this.pdf.pendingCuts.set(cmd.groupId, selectedPages)
 				// NOTE: the UI should show a hightlight background color showing the distinction, after each render the list will update the styles for the desired group
-				this.pendingCuts!.set(cmd.groupId, groupList)
-				console.log(this.pendingCuts)
+				//				this.pendingCuts!.set(cmd.groupId, groupList)
+				//				console.log(this.pendingCuts)
+				console.log(this.pdf.pendingCuts)
 				break;
 		}
 	}
@@ -76,32 +70,33 @@ class PdfManager {
 	setPdf(doc: PDFDocumentProxy) {
 		this.pdf.proxy = doc;
 		this.pdf.pages = Array.from(
-			{ length: this.current!.numPages },
+			{ length: this.pdf.proxy.numPages },
 			(_, i) => ({
-				id: generate(),
+				id: i,
 				pageNum: i + 1,
 				groupId: '',
 				scale: this.pdf.carouselScale,
 			})
 		);
 	}
-	setCurrentPage(pageNum: number) {
-		this.currentPage = pageNum;
+	setCurrent(page: number) {
+		this.pdf.currentPage = page;
 	}
 	setInitialPageArr() {
-		this.execute({ type: ActionType.RESET, carouselScale: 0.8, viewerScale: 2 })
+		this.execute({ type: ActionType.RESET })
 	}
 
-	delete(page: number) {
+	delete(page: Page) {
 		const cmd: Command = {
 			type: ActionType.DELETE,
-			pageId: page,
-			previousIndex: this.pageNumArr.indexOf(page)
+			pageId: page.pageNum,
+			previousIndex: this.pdf.pages.indexOf(page)
 		}
 		this.execute(cmd)
 	}
 
-	swap(animatingCards: Set<number>, draggingCard: number | null, card: number, dragDuration: number) {
+	swap(animatingCards: Set<Page>, draggingCard: Page | null, card: Page, dragDuration: number) {
+		console.log(`draggingCard -> ${draggingCard} card -> ${card}`);
 		if (
 			draggingCard === null ||
 			draggingCard === card ||
@@ -111,8 +106,8 @@ class PdfManager {
 
 		const cmd: Command = {
 			type: ActionType.SWAP,
-			pageIdA: this.pageNumArr.indexOf(draggingCard),
-			pageIdB: this.pageNumArr.indexOf(card),
+			pageIdA: this.pdf.pages.indexOf(draggingCard),
+			pageIdB: this.pdf.pages.indexOf(card),
 		}
 		this.execute(cmd);
 
@@ -120,21 +115,36 @@ class PdfManager {
 		setTimeout(() => animatingCards.delete(card), dragDuration);
 	}
 
-	split(splitAt: number) {
+	split(cut: number) {
+		this.setCut(cut)
+		console.log(`cut -> ${cut}`)
+		if (this.pdf.startCut === -1 || this.pdf.endCut === -1) return;
 		const cmd: Command = {
 			type: ActionType.SPLIT,
-			splitAt: splitAt,
+			startCut: this.pdf.startCut,
+			endCut: this.pdf.endCut,
 			groupId: generate(),
 		}
+		console.log(`start ${this.pdf.startCut}, end -> ${this.pdf.endCut}`);
 		this.execute(cmd);
 	}
+
+	private setCut(cut: number) {
+		if (this.pdf.startCut === -1) {
+			this.pdf.startCut = cut;
+		} else if (this.pdf.endCut === -1) {
+			this.pdf.endCut = cut;
+		}
+	}
 }
+
 
 export const pdfManager = new PdfManager()
 
 export type Pdf = {
 	proxy?: PDFDocumentProxy;
 	pages: Page[];
+	pendingCuts: Map<string, Page[]>;
 	carouselScale: number;
 	viewerScale: number;
 	currentPage: number;
@@ -142,8 +152,8 @@ export type Pdf = {
 	endCut: number;
 }
 
-type Page = {
-	id: string;
+export type Page = {
+	id: number;
 	pageNum: number;
 	groupId: string;
 	scale: number;

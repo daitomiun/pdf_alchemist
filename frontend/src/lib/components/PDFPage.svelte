@@ -14,7 +14,7 @@
 
 <div class="page" bind:clientWidth={containerWidth}>
 	<canvas
-		onclick={() => pdfManager.setCurrentPage(pageNum)}
+		onclick={() => pdfManager.setCurrent(pageNum)}
 		use:renderPage={{ pdf, pageNum, scale, containerWidth }}
 	></canvas>
 </div>

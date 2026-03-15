@@ -6,20 +6,21 @@
 	const dragDuration = 300;
 	let draggingCard: Page | null = null;
 	let animatingCards = new Set<Page>();
+
+	let pages = $derived(pdfManager.pdf.pages);
 </script>
 
 <div class="pdf-carousel">
-	{#each pdfManager.pdf.pages as page, i (page)}
+	{#each pages as page, i (page)}
 		<div class="pdf-group" animate:flip={{ duration: dragDuration }}>
 			{#if i <= pdfManager.pdf.pages.length && pdfManager.pdf.pages.length > 1}
-				{@const nextNeighbor = pdfManager.pdf.pages[i]}
 				<div class="spacer-group">
 					<div
 						aria-label="split-pages"
 						class="split-spacer"
 						onmousedown={() => pdfManager.split(i)}
 					>
-						-{nextNeighbor.pageNum}-
+						-{i}-
 					</div>
 				</div>
 			{/if}

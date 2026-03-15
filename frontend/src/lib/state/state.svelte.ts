@@ -43,7 +43,7 @@ class PdfManager {
 					(_, i) => ({
 						id: i,
 						pageNum: i + 1,
-						groupId: '',
+						groupIds: new Set(),
 						scale: this.pdf.carouselScale,
 					})
 				);
@@ -55,13 +55,20 @@ class PdfManager {
 				this.pdf.endCut = -1;
 				const from = Math.min(cmd.startCut, cmd.endCut);
 				const to = Math.max(cmd.startCut, cmd.endCut);
-				const selectedPages = this.pdf.pages.slice(from, to);
+
+				this.pdf.pages.forEach((p, index) => {
+					if (index >= from && index < to) {
+						p.groupIds.add(cmd.groupId)
+					}
+				})
+				console.log(this.pdf.pages)
+
 
 				this.pdf.pendingCuts.set(cmd.groupId, selectedPages)
 				// NOTE: the UI should show a hightlight background color showing the distinction, after each render the list will update the styles for the desired group
 				//				this.pendingCuts!.set(cmd.groupId, groupList)
 				//				console.log(this.pendingCuts)
-				console.log(this.pdf.pendingCuts)
+				//				console.log(this.pdf.pendingCuts)
 				break;
 		}
 	}
@@ -74,7 +81,7 @@ class PdfManager {
 			(_, i) => ({
 				id: i,
 				pageNum: i + 1,
-				groupId: '',
+				groupIds: new Set(),
 				scale: this.pdf.carouselScale,
 			})
 		);
@@ -119,6 +126,12 @@ class PdfManager {
 		this.setCut(cut)
 		console.log(`cut -> ${cut}`)
 		if (this.pdf.startCut === -1 || this.pdf.endCut === -1) return;
+
+		if (this.pdf.startCut === this.pdf.endCut) {
+			this.pdf.startCut = -1;
+			this.pdf.endCut = -1;
+			return;
+		}
 		const cmd: Command = {
 			type: ActionType.SPLIT,
 			startCut: this.pdf.startCut,
@@ -155,7 +168,7 @@ export type Pdf = {
 export type Page = {
 	id: number;
 	pageNum: number;
-	groupId: string;
+	groupIds: Set<string>;
 	scale: number;
 }
 

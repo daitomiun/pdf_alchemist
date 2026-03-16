@@ -12,10 +12,7 @@
 		const isPageVisible = pdfManager.pdf.pages.some(
 			(p) => p.pageNum === currentPage,
 		);
-		console.log(`is visible -> ${isPageVisible}`);
 		if (!isPageVisible) {
-			console.log(pdfManager.pdf.pages);
-			console.log(pdfManager.pdf.pages.findIndex((p) => p.pageNum === 1));
 			pdfManager.setCurrent(pdfManager.pdf.pages[0].pageNum);
 		}
 	});

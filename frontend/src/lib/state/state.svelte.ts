@@ -47,6 +47,8 @@ class PdfManager {
 						scale: this.pdf.carouselScale,
 					})
 				);
+				this.pdf.startCut = -1;
+				this.pdf.endCut = -1;
 				this.pdf.pendingCuts = new Map()
 
 				break;
@@ -58,17 +60,12 @@ class PdfManager {
 
 				this.pdf.pages.forEach((p, index) => {
 					if (index >= from && index < to) {
-						p.groupIds.add(cmd.groupId)
+						p.groupIds = new Set([...p.groupIds, cmd.groupId]);
 					}
 				})
 				console.log(this.pdf.pages)
 
-
-				this.pdf.pendingCuts.set(cmd.groupId, selectedPages)
-				// NOTE: the UI should show a hightlight background color showing the distinction, after each render the list will update the styles for the desired group
-				//				this.pendingCuts!.set(cmd.groupId, groupList)
-				//				console.log(this.pendingCuts)
-				//				console.log(this.pdf.pendingCuts)
+				this.pdf.pendingCuts.set(cmd.groupId, this.pdf.pages.filter((_, index) => index >= from && index < to))
 				break;
 		}
 	}

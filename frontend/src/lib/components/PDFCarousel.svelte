@@ -8,6 +8,11 @@
 	let animatingCards = new Set<Page>();
 
 	let pages = $derived(pdfManager.pdf.pages);
+	let startCut = $derived(pdfManager.pdf.startCut);
+	let endCut = $derived(pdfManager.pdf.endCut);
+	$inspect(startCut);
+	$inspect(endCut);
+	$inspect(pages);
 </script>
 
 <div class="pdf-carousel">
@@ -16,8 +21,12 @@
 			{#if i <= pdfManager.pdf.pages.length && pdfManager.pdf.pages.length > 1}
 				<div class="spacer-group">
 					<div
+						role="button"
+						tabindex={i}
 						aria-label="split-pages"
-						class="split-spacer"
+						class="split-spacer {i == startCut || i == endCut
+							? 'active'
+							: 'inactive'}"
 						onmousedown={() => pdfManager.split(i)}
 					>
 						-{i}-
@@ -36,7 +45,7 @@
 				>
 					<span>{page.pageNum}</span>
 					<button
-						onclick={() => pdfManager.delete(page)}
+						onmousedown={() => pdfManager.delete(page)}
 						aria-label="delete-page"
 						type="button"
 					>
@@ -65,25 +74,46 @@
 			{#if i == pdfManager.pdf.pages.length - 1}
 				<div class="spacer-group">
 					<div
+						role="button"
+						tabindex={i + 1}
 						aria-label="split-pages"
-						class="split-spacer"
+						class="split-spacer {i + 1 == startCut || i + 1 == endCut
+							? 'active'
+							: 'inactive'}"
 						onmousedown={() => pdfManager.split(i + 1)}
 					>
 						{i + 1}
 					</div>
 				</div>
 			{/if}
+			<div class="group-container">
+				{#if page.groupIds.size > 0}
+					{#each page.groupIds as groupId, i (groupId)}
+						<div class="group">{i}</div>
+					{/each}
+				{/if}
+			</div>
 		</div>
 	{/each}
 </div>
 
 <style>
+	.group-container {
+		align-items: flex-end;
+	}
+	.group {
+		background-color: lime;
+		border: 1px solid black;
+	}
 	.pdf-group {
 		display: flex;
 	}
 	.split-spacer {
 		height: 100%;
 		border: 1px dashed black;
+	}
+	.split-spacer:hover {
+		color: green;
 	}
 	.pdf-carousel {
 		grid-area: 4 / 3 / 6 / 6;
@@ -94,6 +124,12 @@
 		overflow-y: hidden;
 		white-space: nowrap;
 		background-color: aliceblue;
+	}
+	.inactive {
+		color: violet;
+	}
+	.active {
+		color: green;
 	}
 	.card {
 		width: 100%;

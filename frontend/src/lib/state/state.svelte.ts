@@ -11,7 +11,7 @@ class PdfManager {
 		startCut: -1,
 		endCut: -1,
 		currentPage: 1,
-		pendingCuts: new Map()
+		pendingCuts: {}
 	});
 
 	#undoStack: Command[] = []
@@ -43,13 +43,13 @@ class PdfManager {
 					(_, i) => ({
 						id: i,
 						pageNum: i + 1,
-						groupIds: new Set(),
+						groupIds: [],
 						scale: this.pdf.carouselScale,
 					})
 				);
 				this.pdf.startCut = -1;
 				this.pdf.endCut = -1;
-				this.pdf.pendingCuts = new Map()
+				this.pdf.pendingCuts = {}
 
 				break;
 			case ActionType.SPLIT:
@@ -60,12 +60,14 @@ class PdfManager {
 
 				this.pdf.pages.forEach((p, index) => {
 					if (index >= from && index < to) {
-						p.groupIds = new Set([...p.groupIds, cmd.groupId]);
+						if (!p.groupIds.includes(cmd.groupId)) {
+							p.groupIds.push(cmd.groupId)
+						}
 					}
 				})
 				console.log(this.pdf.pages)
 
-				this.pdf.pendingCuts.set(cmd.groupId, this.pdf.pages.filter((_, index) => index >= from && index < to))
+				this.pdf.pendingCuts[cmd.groupId] = this.pdf.pages.filter((_, index) => index >= from && index < to);
 				break;
 		}
 	}
@@ -78,7 +80,7 @@ class PdfManager {
 			(_, i) => ({
 				id: i,
 				pageNum: i + 1,
-				groupIds: new Set(),
+				groupIds: [],
 				scale: this.pdf.carouselScale,
 			})
 		);
@@ -154,7 +156,7 @@ export const pdfManager = new PdfManager()
 export type Pdf = {
 	proxy?: PDFDocumentProxy;
 	pages: Page[];
-	pendingCuts: Map<string, Page[]>;
+	pendingCuts: Record<string, Page[]>;
 	carouselScale: number;
 	viewerScale: number;
 	currentPage: number;
@@ -165,7 +167,7 @@ export type Pdf = {
 export type Page = {
 	id: number;
 	pageNum: number;
-	groupIds: Set<string>;
+	groupIds: string[];
 	scale: number;
 }
 

@@ -9,7 +9,8 @@ export enum ActionType {
 }
 
 export type Command =
-	| { type: ActionType.DELETE; pageId: number; previousIndex: number }
+	| { type: ActionType.DELETE; page: Page; previousIndex: number }
+
 	| { type: ActionType.SWAP; pageIdA: number; pageIdB: number }
 	| { type: ActionType.SPLIT; groupId: string; startCut: number, endCut: number }
 	| { type: ActionType.ADD; sourceDoc: string; sourcePage: number; insertAt: number }

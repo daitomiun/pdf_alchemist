@@ -1,4 +1,5 @@
 import { ActionType, type Command } from "$lib/types/pdf";
+import { indexOf } from "effect/String";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { generate } from "short-uuid";
 
@@ -27,12 +28,24 @@ class PdfManager {
 	private applyCommand(cmd: Command) {
 		switch (cmd.type) {
 			case ActionType.DELETE:
-				this.pdf.pages = this.pdf.pages.filter((page) => page.pageNum != cmd.pageId)
+				cmd.page.groupIds.forEach((id) => {
+					const pageIdx = this.pdf.pages.indexOf(cmd.page);
+					const groupIdx = this.pdf.pages[pageIdx].groupIds.indexOf(id);
+					this.pdf.pages[pageIdx].groupIds.splice(groupIdx, 1);
+				});
+				this.pdf.pages = this.pdf.pages.filter((page) => page.pageNum != cmd.page.pageNum)
 				break;
 			case ActionType.SWAP:
-				if (cmd.pageIdA < 0 || cmd.pageIdB < 0) return;
+				const pageIdA = this.pdf.pages.indexOf(cmd.pageA)
+				const pageIdB = this.pdf.pages.indexOf(cmd.pageB)
+				if (pageIdA < 0 || pageIdB < 0) return;
 				const next = [...this.pdf.pages];
-				[next[cmd.pageIdA], next[cmd.pageIdB]] = [next[cmd.pageIdB], next[cmd.pageIdA]];
+				const groupIdPageA = next[pageIdA].groupIds
+				const groupIdPageB = next[pageIdB].groupIds
+				next[pageIdA].groupIds = groupIdPageB;
+				next[pageIdB].groupIds = groupIdPageA;
+				[next[pageIdA], next[pageIdB]] = [next[pageIdB], next[pageIdA]];
+
 				this.pdf.pages = next;
 				break;
 			case ActionType.RESET:
@@ -49,7 +62,7 @@ class PdfManager {
 				);
 				this.pdf.startCut = -1;
 				this.pdf.endCut = -1;
-				this.pdf.pendingCuts = {}
+				this.pdf.pendingCuts = []
 
 				break;
 			case ActionType.SPLIT:
@@ -65,9 +78,10 @@ class PdfManager {
 						}
 					}
 				})
+				if (!this.pdf.pendingCuts.includes(cmd.groupId)) {
+					this.pdf.pendingCuts.push(cmd.groupId)
+				}
 				console.log(this.pdf.pages)
-
-				this.pdf.pendingCuts[cmd.groupId] = this.pdf.pages.filter((_, index) => index >= from && index < to);
 				break;
 		}
 	}
@@ -95,7 +109,7 @@ class PdfManager {
 	delete(page: Page) {
 		const cmd: Command = {
 			type: ActionType.DELETE,
-			pageId: page.pageNum,
+			page: page,
 			previousIndex: this.pdf.pages.indexOf(page)
 		}
 		this.execute(cmd)
@@ -112,8 +126,8 @@ class PdfManager {
 
 		const cmd: Command = {
 			type: ActionType.SWAP,
-			pageIdA: this.pdf.pages.indexOf(draggingCard),
-			pageIdB: this.pdf.pages.indexOf(card),
+			pageA: draggingCard,
+			pageB: card,
 		}
 		this.execute(cmd);
 
@@ -156,7 +170,7 @@ export const pdfManager = new PdfManager()
 export type Pdf = {
 	proxy?: PDFDocumentProxy;
 	pages: Page[];
-	pendingCuts: Record<string, Page[]>;
+	pendingCuts: string[];
 	carouselScale: number;
 	viewerScale: number;
 	currentPage: number;

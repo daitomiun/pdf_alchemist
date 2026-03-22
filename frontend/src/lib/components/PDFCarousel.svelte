@@ -13,8 +13,8 @@
 	let startCut = $derived(pdfManager.pdf.startCut);
 	let endCut = $derived(pdfManager.pdf.endCut);
 	$inspect(pendingCuts);
-	$inspect(startCut);
-	$inspect(endCut);
+	//	$inspect(startCut);
+	//	$inspect(endCut);
 	$inspect(pages);
 </script>
 
@@ -92,7 +92,7 @@
 				{/if}
 			</div>
 			<div class="group-container">
-				{#each Object.entries(pdfManager.pdf.pendingCuts) as [groupId, _]}
+				{#each pdfManager.pdf.pendingCuts as groupId, _ (groupId)}
 					{#if page.groupIds.includes(groupId)}
 						<div class="group">g</div>
 					{:else}

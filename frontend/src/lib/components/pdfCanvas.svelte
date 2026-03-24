@@ -5,6 +5,7 @@
 
 	import { pdfManager } from "$lib/state/state.svelte";
 	import PDFViewer from "./PDFViewer.svelte";
+	import EditorBar from "./EditorBar.svelte";
 
 	let files = $state<FileList | null>(null);
 
@@ -18,7 +19,7 @@
 				);
 				let pdf = await Effect.runPromise(loadPDF(fileBuffer));
 				pdfManager.setPdf(pdf);
-				pdfManager.setInitialPageArr();
+				pdfManager.resetChanges();
 			}
 			load();
 		}
@@ -31,14 +32,8 @@
 {#if files && pdfManager.pdf.proxy != undefined}
 	<div class="container-grid">
 		<div class="new-elements">
-			<button
-				aria-label="reset-changes"
-				type="button"
-				class="text-white bg-orange-500 box-border border border-transparent hover:bg-warning-strong focus:ring-4 focus:ring-warning-medium shadow-xs font-medium leading-5 rounded-base text-sm px-4 py-5 focus:outline-none"
-				onclick={() => pdfManager.setInitialPageArr()}
-			>
-				Reset changes
-			</button>
+			PDF Alchemist
+			<EditorBar></EditorBar>
 		</div>
 		<PDFViewer></PDFViewer>
 		<PDFCarousel></PDFCarousel>
@@ -60,5 +55,8 @@
 		grid-area: 1 / 3 / 4 / 6;
 		border: 4px solid black;
 		background-color: grey;
+		display: flex;
+		justify-content: end;
+		align-items: flex-end;
 	}
 </style>

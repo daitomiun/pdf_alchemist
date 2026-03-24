@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { pdfManager, type Page } from "$lib/state/state.svelte";
-	import { has } from "effect/HashSet";
 	import PDFPage from "./PDFPage.svelte";
 	import { flip } from "svelte/animate";
 
@@ -168,5 +167,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+	}
+	.pdf-widget:hover {
+		cursor: grab;
 	}
 </style>

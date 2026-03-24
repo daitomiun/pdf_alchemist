@@ -1,5 +1,4 @@
 import { ActionType, type Command } from "$lib/types/pdf";
-import { indexOf } from "effect/String";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { generate } from "short-uuid";
 
@@ -12,7 +11,7 @@ class PdfManager {
 		startCut: -1,
 		endCut: -1,
 		currentPage: 1,
-		pendingCuts: {}
+		pendingCuts: []
 	});
 
 	#undoStack: Command[] = []
@@ -102,7 +101,7 @@ class PdfManager {
 	setCurrent(page: number) {
 		this.pdf.currentPage = page;
 	}
-	setInitialPageArr() {
+	resetChanges() {
 		this.execute({ type: ActionType.RESET })
 	}
 
@@ -116,7 +115,6 @@ class PdfManager {
 	}
 
 	swap(animatingCards: Set<Page>, draggingCard: Page | null, card: Page, dragDuration: number) {
-		console.log(`draggingCard -> ${draggingCard} card -> ${card}`);
 		if (
 			draggingCard === null ||
 			draggingCard === card ||
@@ -161,6 +159,10 @@ class PdfManager {
 		} else if (this.pdf.endCut === -1) {
 			this.pdf.endCut = cut;
 		}
+	}
+
+	export() {
+		console.log("placeholder!!!! for now >:)")
 	}
 }
 

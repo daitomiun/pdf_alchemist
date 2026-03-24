@@ -6,8 +6,6 @@
 	let currentPage = $derived(pdfManager.pdf.currentPage);
 	let containerWidth = $state(0);
 
-	$inspect(currentPage);
-
 	$effect(() => {
 		const isPageVisible = pdfManager.pdf.pages.some(
 			(p) => p.pageNum === currentPage,

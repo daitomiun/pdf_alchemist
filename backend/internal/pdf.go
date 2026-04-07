@@ -42,7 +42,7 @@ func SplitPages(cfg model.Configuration, doc *bytes.Reader, start, end int) (*by
 	return &newFile, nil
 }
 
-func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB int) (*bytes.Buffer, error) {
+func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB Page) (*bytes.Buffer, error) {
 	totalPages, err := api.PageCount(doc, &cfg)
 	if err != nil {
 		return nil, errors.New("Cannot get page count")

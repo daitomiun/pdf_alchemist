@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/daitonium/pdf_alchemist/backend/internal"
+	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
@@ -27,22 +28,38 @@ func TransformFile(d internal.Document) {
 	data, _ := io.ReadAll(d.File)
 	d.File.Seek(0, io.SeekStart)
 
-	var mainFile bytes.Buffer
+	manager := internal.PdfManager{
+		MainFile: bytes.NewBuffer(data),
+		Groups:   []internal.Group{},
+	}
+
 	for i, cmd := range d.Commands {
 		log.Printf("Step %d. %s \n", i, cmd.Type)
 
 		switch cmd.Type {
 		case internal.DELETE:
-			updatedFile, err := internal.Delete(*cfg, bytes.NewReader(data), *cmd.Page)
+			updatedFile, err := internal.Delete(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.Page)
 			if err != nil {
 				log.Println("Delete failed")
 				return
 			}
-			mainFile = *updatedFile
+			// TODO: check that the is is inside the group if it does, delete the page from the split
+			manager.MainFile = bytes.NewBuffer(updatedFile.Bytes())
 		case internal.SPLIT:
-
+			newFile, err := internal.SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
+			if err != nil {
+				log.Println("Split failed")
+				return
+			}
+			manager.Groups = append(manager.Groups, internal.Group{File: *newFile, GroupId: uuid.New()})
 		case internal.SWAP:
-
+			newFile, err := internal.SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
+			if err != nil {
+				log.Println("Split failed")
+				return
+			}
+			// TODO: check that if page is inside group Id, modify and swap them (similar to UI)
+			manager.MainFile = bytes.NewBuffer(newFile.Bytes())
 		default:
 			continue
 		}

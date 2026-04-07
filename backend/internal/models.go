@@ -3,11 +3,24 @@ package internal
 import (
 	"bytes"
 	"mime/multipart"
+
+	"github.com/google/uuid"
 )
 
 type Document struct {
 	File     *bytes.Reader
 	Commands []Command
+}
+
+// The manager will handle the group split logic and the original file changes
+type PdfManager struct {
+	MainFile *bytes.Buffer
+	Groups   []Group
+}
+
+type Group struct {
+	File    bytes.Buffer
+	GroupId uuid.UUID
 }
 
 type ActionType string

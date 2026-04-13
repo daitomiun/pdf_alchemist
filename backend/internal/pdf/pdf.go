@@ -1,4 +1,4 @@
-package internal
+package pdf
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB Page) (*
 	if err != nil {
 		return nil, errors.New("Cannot get page count")
 	}
-	pages := swapOrder(totalPages, pageA, pageB)
+	pages := swapOrder(totalPages, pageA.PageNum, pageB.PageNum)
 	var newFile bytes.Buffer
 
 	api.Trim(doc, &newFile, pages, &cfg)

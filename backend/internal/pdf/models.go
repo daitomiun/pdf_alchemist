@@ -1,4 +1,4 @@
-package internal
+package pdf
 
 import (
 	"bytes"
@@ -15,12 +15,12 @@ type Document struct {
 // The manager will handle the group split logic and the original file changes
 type PdfManager struct {
 	MainFile *bytes.Buffer
-	Groups   []Group
+	Groups   map[uuid.UUID]Group
 }
 
 type Group struct {
-	File    bytes.Buffer
-	GroupId uuid.UUID
+	File  bytes.Buffer
+	Pages map[int]Page
 }
 
 type ActionType string
@@ -33,8 +33,8 @@ const (
 )
 
 type Body struct {
-	File     *multipart.FileHeader `form:"File" binding:"required"`
-	Commands string                `form:"commands" binding:"required"`
+	FileHeader *multipart.FileHeader `form:"File" binding:"required"`
+	Commands   string                `form:"commands" binding:"required"`
 }
 
 type Command struct {

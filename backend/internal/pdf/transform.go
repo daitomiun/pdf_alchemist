@@ -1,11 +1,10 @@
-package transform
+package pdf
 
 import (
 	"bytes"
 	"io"
 	"log"
 
-	"github.com/daitonium/pdf_alchemist/backend/internal"
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
@@ -23,37 +22,47 @@ import (
 //		- the location of the files, the UUID link to the files, the command outputs
 */
 
-func TransformFile(d internal.Document) {
+func Transform(d Document) {
 	cfg := model.NewDefaultConfiguration()
 	data, _ := io.ReadAll(d.File)
 	d.File.Seek(0, io.SeekStart)
 
-	manager := internal.PdfManager{
+	manager := PdfManager{
 		MainFile: bytes.NewBuffer(data),
-		Groups:   []internal.Group{},
+		Groups:   map[uuid.UUID]Group{},
 	}
 
 	for i, cmd := range d.Commands {
 		log.Printf("Step %d. %s \n", i, cmd.Type)
 
 		switch cmd.Type {
-		case internal.DELETE:
-			updatedFile, err := internal.Delete(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.Page)
+		case DELETE:
+			updatedFile, err := Delete(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.Page)
 			if err != nil {
 				log.Println("Delete failed")
 				return
 			}
+			for _, group := range manager.Groups {
+				_, pageExists := group.Pages[cmd.Page.PageNum]
+				if pageExists {
+					// TODO: delete the page from the specified group
+				}
+
+			}
 			// TODO: check that the is is inside the group if it does, delete the page from the split
 			manager.MainFile = bytes.NewBuffer(updatedFile.Bytes())
-		case internal.SPLIT:
-			newFile, err := internal.SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
+		case SPLIT:
+			newFile, err := SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
 			if err != nil {
 				log.Println("Split failed")
 				return
 			}
-			manager.Groups = append(manager.Groups, internal.Group{File: *newFile, GroupId: uuid.New()})
-		case internal.SWAP:
-			newFile, err := internal.SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
+
+			// manager.Groups = append(manager.Groups, Group{File: *newFile, GroupId: uuid.New()})
+
+			manager.Groups[uuid.New()] = Group{File: *newFile, Pages: }
+		case SWAP:
+			newFile, err := SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
 			if err != nil {
 				log.Println("Split failed")
 				return

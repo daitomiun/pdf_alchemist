@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 
-	"github.com/daitonium/pdf_alchemist/backend/internal"
+	"github.com/daitonium/pdf_alchemist/backend/internal/pdf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,19 +24,33 @@ func main() {
 	})
 
 	r.POST("/documents/transform", func(c *gin.Context) {
-		var form internal.Body
+		var form pdf.Body
 		if err := c.ShouldBind(&form); err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
 
-		var cmds []internal.Command
+		var cmds []pdf.Command
 		if err := json.Unmarshal([]byte(form.Commands), &cmds); err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
 
-		errors := internal.Validate(cmds)
+		file, err := form.FileHeader.Open()
+		defer file.Close()
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		buf := bytes.NewBuffer(nil)
+
+		if _, err := io.Copy(buf, file); err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		errors := pdf.Validate(cmds)
 		if len(errors) > 0 {
 			c.JSON(400, gin.H{
 				"message": "validation Failed",
@@ -41,6 +58,11 @@ func main() {
 			})
 			return
 		}
+		document := pdf.Document{
+			File:     bytes.NewReader(buf.Bytes()),
+			Commands: cmds,
+		}
+		pdf.Transform(document)
 	})
 	r.GET("/documents/:id/download")
 

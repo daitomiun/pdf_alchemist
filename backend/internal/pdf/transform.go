@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"io"
 	"log"
+	"math"
+	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
@@ -27,9 +30,16 @@ func Transform(d Document) {
 	data, _ := io.ReadAll(d.File)
 	d.File.Seek(0, io.SeekStart)
 
+	pages, err := GenerateTotalPages(*cfg, bytes.NewReader(data))
+	if err != nil {
+		log.Println("")
+		return
+	}
+
 	manager := PdfManager{
-		MainFile: bytes.NewBuffer(data),
-		Groups:   map[uuid.UUID]Group{},
+		MainFile:  bytes.NewBuffer(data),
+		MainPages: pages,
+		Groups:    map[uuid.UUID]Group{},
 	}
 
 	for i, cmd := range d.Commands {
@@ -42,25 +52,31 @@ func Transform(d Document) {
 				log.Println("Delete failed")
 				return
 			}
-			for _, group := range manager.Groups {
-				_, pageExists := group.Pages[cmd.Page.PageNum]
-				if pageExists {
-					// TODO: delete the page from the specified group
-				}
-
-			}
-			// TODO: check that the is is inside the group if it does, delete the page from the split
 			manager.MainFile = bytes.NewBuffer(updatedFile.Bytes())
+			// NOTE: Update the Pages from our map
+			delete(manager.MainPages, *cmd.Page)
+
+			for id, group := range manager.Groups {
+				_, pageExists := group.Pages[*cmd.Page]
+				if pageExists {
+					groupFile, err := Delete(*cfg, bytes.NewReader(manager.Groups[id].File.Bytes()), *cmd.Page)
+					if err != nil {
+						log.Println("Group File delete failed")
+						return
+					}
+					group.File = groupFile
+					// NOTE: Update the Pages from our map
+					delete(group.Pages, *cmd.Page)
+					manager.Groups[id] = group
+				}
+			}
 		case SPLIT:
 			newFile, err := SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
 			if err != nil {
 				log.Println("Split failed")
 				return
 			}
-
-			// manager.Groups = append(manager.Groups, Group{File: *newFile, GroupId: uuid.New()})
-
-			manager.Groups[uuid.New()] = Group{File: *newFile, Pages: }
+			manager.Groups[uuid.New()] = Group{File: newFile, Pages: GenerateSplitPages(*cmd.StartCut, *cmd.EndCut)}
 		case SWAP:
 			newFile, err := SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
 			if err != nil {
@@ -75,4 +91,42 @@ func Transform(d Document) {
 
 	}
 
+}
+
+func GenerateSplitPages(start, end int) map[int]struct{} {
+	from := math.Min(float64(start), float64(end))
+	to := math.Max(float64(start), float64(end))
+
+	pages := make(map[int]struct{}, int(to-from))
+	for i := int(from); i < int(to); i++ {
+		pages[i] = struct{}{}
+	}
+
+	return pages
+}
+
+func updateSwapState(pages map[int]struct{}, pageA, pageB int) map[int]struct{} {
+
+	// TODO: check that any groups have the specified page
+	// return the new list of pages from the main file
+	return nil
+}
+
+func updateGroupState(groups map[uuid.UUID]Group) Group {
+
+	return Group{}
+}
+
+func GenerateTotalPages(cfg model.Configuration, doc *bytes.Reader) (map[int]struct{}, error) {
+	total, err := api.PageCount(doc, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	pages := make(map[int]struct{}, total)
+	for i := range total {
+		pages[i+1] = struct{}{}
+	}
+
+	return pages, nil
 }

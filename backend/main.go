@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"mime/multipart"
 	"net/http"
 
 	"github.com/daitonium/pdf_alchemist/backend/internal/pdf"

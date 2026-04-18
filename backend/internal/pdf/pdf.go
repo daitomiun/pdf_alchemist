@@ -12,10 +12,10 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
-func Delete(cfg model.Configuration, doc *bytes.Reader, page Page) (*bytes.Buffer, error) {
+func Delete(cfg model.Configuration, doc *bytes.Reader, page int) (*bytes.Buffer, error) {
 	var newFile bytes.Buffer
 
-	pages := []string{strconv.Itoa(page.PageNum)}
+	pages := []string{strconv.Itoa(page)}
 
 	if err := api.RemovePages(doc, &newFile, pages, &cfg); err != nil {
 		return nil, err
@@ -42,12 +42,12 @@ func SplitPages(cfg model.Configuration, doc *bytes.Reader, start, end int) (*by
 	return &newFile, nil
 }
 
-func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB Page) (*bytes.Buffer, error) {
+func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB int) (*bytes.Buffer, error) {
 	totalPages, err := api.PageCount(doc, &cfg)
 	if err != nil {
 		return nil, errors.New("Cannot get page count")
 	}
-	pages := swapOrder(totalPages, pageA.PageNum, pageB.PageNum)
+	pages := swapOrder(totalPages, pageA, pageB)
 	var newFile bytes.Buffer
 
 	api.Trim(doc, &newFile, pages, &cfg)

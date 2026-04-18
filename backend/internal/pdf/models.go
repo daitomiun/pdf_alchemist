@@ -14,13 +14,14 @@ type Document struct {
 
 // The manager will handle the group split logic and the original file changes
 type PdfManager struct {
-	MainFile *bytes.Buffer
-	Groups   map[uuid.UUID]Group
+	MainFile  *bytes.Buffer
+	MainPages map[int]struct{}
+	Groups    map[uuid.UUID]Group
 }
 
 type Group struct {
-	File  bytes.Buffer
-	Pages map[int]Page
+	File  *bytes.Buffer
+	Pages map[int]struct{}
 }
 
 type ActionType string
@@ -40,18 +41,13 @@ type Body struct {
 type Command struct {
 	Type ActionType `json:"type"`
 	// DELETE
-	Page *Page `json:"page,omitempty"`
+	Page *int `json:"page,omitempty"`
 
 	// SWAP
-	PageA *Page `json:"pageA,omitempty"`
-	PageB *Page `json:"pageB,omitempty"`
+	PageA *int `json:"pageA,omitempty"`
+	PageB *int `json:"pageB,omitempty"`
 
 	// SPLIT
 	StartCut *int `json:"startCut,omitempty"`
 	EndCut   *int `json:"endCut,omitempty"`
-}
-
-type Page struct {
-	Id      string `json:"id"`
-	PageNum int    `json:"pageNum"`
 }

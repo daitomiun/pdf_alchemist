@@ -14,14 +14,14 @@ type Document struct {
 
 // The manager will handle the group split logic and the original file changes
 type PdfManager struct {
-	MainFile  *bytes.Buffer
-	MainPages map[int]struct{}
-	Groups    map[uuid.UUID]Group
+	MainFile *bytes.Buffer
+	Pages    []Page
+	Groups   map[uuid.UUID]*bytes.Buffer
 }
 
-type Group struct {
-	File  *bytes.Buffer
-	Pages map[int]struct{}
+type Page struct {
+	PageNum  int
+	GroupIds []uuid.UUID
 }
 
 type ActionType string

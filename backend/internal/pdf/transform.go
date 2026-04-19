@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"slices"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -37,9 +38,9 @@ func Transform(d Document) {
 	}
 
 	manager := PdfManager{
-		MainFile:  bytes.NewBuffer(data),
-		MainPages: pages,
-		Groups:    map[uuid.UUID]Group{},
+		MainFile: bytes.NewBuffer(data),
+		Pages:    pages,
+		Groups:   make(map[uuid.UUID]*bytes.Buffer),
 	}
 
 	for i, cmd := range d.Commands {
@@ -47,44 +48,92 @@ func Transform(d Document) {
 
 		switch cmd.Type {
 		case DELETE:
+			pageExists := slices.ContainsFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.Page })
+			if !pageExists {
+				log.Println("Delete failed, cannot find page")
+				return
+			}
+
 			updatedFile, err := Delete(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.Page)
 			if err != nil {
 				log.Println("Delete failed")
 				return
 			}
-			manager.MainFile = bytes.NewBuffer(updatedFile.Bytes())
-			// NOTE: Update the Pages from our map
-			delete(manager.MainPages, *cmd.Page)
 
-			for id, group := range manager.Groups {
-				_, pageExists := group.Pages[*cmd.Page]
-				if pageExists {
-					groupFile, err := Delete(*cfg, bytes.NewReader(manager.Groups[id].File.Bytes()), *cmd.Page)
-					if err != nil {
-						log.Println("Group File delete failed")
-						return
-					}
-					group.File = groupFile
-					// NOTE: Update the Pages from our map
-					delete(group.Pages, *cmd.Page)
-					manager.Groups[id] = group
+			idx := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.Page })
+			groups := manager.Pages[idx].GroupIds
+
+			for _, id := range groups {
+				groupFile, err := Delete(*cfg, bytes.NewReader(manager.Groups[id].Bytes()), *cmd.Page)
+				if err != nil {
+					log.Println("Group File delete failed")
+					return
 				}
+				manager.Groups[id] = groupFile
 			}
+			manager.Pages = slices.Delete(manager.Pages, idx, idx+1)
+			manager.MainFile = bytes.NewBuffer(updatedFile.Bytes())
 		case SPLIT:
 			newFile, err := SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
 			if err != nil {
 				log.Println("Split failed")
 				return
 			}
-			manager.Groups[uuid.New()] = Group{File: newFile, Pages: GenerateSplitPages(*cmd.StartCut, *cmd.EndCut)}
+			newId := uuid.New()
+			manager.Groups[newId] = newFile
+
+			from := math.Min(float64(*cmd.StartCut), float64(*cmd.EndCut))
+			to := math.Max(float64(*cmd.StartCut), float64(*cmd.EndCut))
+
+			// INFO: Update state of pages
+			for i, p := range manager.Pages {
+				if i >= int(from) && i < int(to) {
+					if !slices.Contains(p.GroupIds, newId) {
+						manager.Pages[i].GroupIds = append(manager.Pages[i].GroupIds, newId)
+					}
+				}
+			}
 		case SWAP:
 			newFile, err := SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
 			if err != nil {
 				log.Println("Split failed")
 				return
 			}
-			// TODO: check that if page is inside group Id, modify and swap them (similar to UI)
 			manager.MainFile = bytes.NewBuffer(newFile.Bytes())
+
+			pages := manager.Pages
+			idxA := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.PageA })
+			idxB := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.PageB })
+			groupsA := pages[idxA].GroupIds
+			groupsB := pages[idxB].GroupIds
+
+			pages[idxA].GroupIds = groupsB
+			pages[idxB].GroupIds = groupsA
+			pages[idxA], pages[idxB] = pages[idxB], pages[idxA]
+			manager.Pages = pages
+
+			affectedSet := make(map[uuid.UUID]struct{})
+
+			for _, id := range groupsA {
+				affectedSet[id] = struct{}{}
+			}
+			for _, id := range groupsB {
+				affectedSet[id] = struct{}{}
+			}
+
+			groupedPages := make(map[uuid.UUID][]string)
+			for _, p := range manager.Pages {
+				for id := range affectedSet {
+					if slices.Contains(p.GroupIds, id) {
+						groupedPages[id] = append(groupedPages[id], strconv.Itoa(p.PageNum))
+					}
+				}
+			}
+
+			for id, p := range groupedPages {
+				newFile := TrimPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), p)
+				manager.Groups[id] = newFile
+			}
 		default:
 			continue
 		}
@@ -93,39 +142,15 @@ func Transform(d Document) {
 
 }
 
-func GenerateSplitPages(start, end int) map[int]struct{} {
-	from := math.Min(float64(start), float64(end))
-	to := math.Max(float64(start), float64(end))
-
-	pages := make(map[int]struct{}, int(to-from))
-	for i := int(from); i < int(to); i++ {
-		pages[i] = struct{}{}
-	}
-
-	return pages
-}
-
-func updateSwapState(pages map[int]struct{}, pageA, pageB int) map[int]struct{} {
-
-	// TODO: check that any groups have the specified page
-	// return the new list of pages from the main file
-	return nil
-}
-
-func updateGroupState(groups map[uuid.UUID]Group) Group {
-
-	return Group{}
-}
-
-func GenerateTotalPages(cfg model.Configuration, doc *bytes.Reader) (map[int]struct{}, error) {
+func GenerateTotalPages(cfg model.Configuration, doc *bytes.Reader) ([]Page, error) {
 	total, err := api.PageCount(doc, &cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	pages := make(map[int]struct{}, total)
+	pages := make([]Page, total)
 	for i := range total {
-		pages[i+1] = struct{}{}
+		pages = append(pages, Page{PageNum: i + 1})
 	}
 
 	return pages, nil

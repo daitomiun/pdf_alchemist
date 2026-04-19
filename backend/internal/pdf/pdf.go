@@ -55,6 +55,14 @@ func SwapPages(cfg model.Configuration, doc *bytes.Reader, pageA, pageB int) (*b
 	return &newFile, nil
 }
 
+func TrimPages(cfg model.Configuration, doc *bytes.Reader, pages []string) *bytes.Buffer {
+	var newFile bytes.Buffer
+
+	api.Trim(doc, &newFile, pages, &cfg)
+
+	return &newFile
+}
+
 func swapOrder(totalPages, pageA, pageB int) []string {
 	newOrder := make([]string, 0, totalPages)
 	for i := 1; i < totalPages; i++ {

@@ -61,6 +61,10 @@ func Transform(d Document) {
 			}
 
 			idx := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.Page })
+			if idx == -1 {
+				log.Println("Delete Failed, the page does not exists")
+				return
+			}
 			groups := manager.Pages[idx].GroupIds
 
 			for _, id := range groups {
@@ -104,6 +108,10 @@ func Transform(d Document) {
 			pages := manager.Pages
 			idxA := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.PageA })
 			idxB := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.PageB })
+			if idxA == -1 || idxB == -1 {
+				log.Println("The pages do not exist")
+				return
+			}
 			groupsA := pages[idxA].GroupIds
 			groupsB := pages[idxB].GroupIds
 
@@ -131,7 +139,11 @@ func Transform(d Document) {
 			}
 
 			for id, p := range groupedPages {
-				newFile := TrimPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), p)
+				newFile, err := TrimPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), p)
+				if err != nil {
+					log.Println("The swap failed")
+					return
+				}
 				manager.Groups[id] = newFile
 			}
 		default:
@@ -148,7 +160,7 @@ func GenerateTotalPages(cfg model.Configuration, doc *bytes.Reader) ([]Page, err
 		return nil, err
 	}
 
-	pages := make([]Page, total)
+	pages := make([]Page, 0, total)
 	for i := range total {
 		pages = append(pages, Page{PageNum: i + 1})
 	}

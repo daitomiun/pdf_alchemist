@@ -8,6 +8,8 @@ import (
 
 	"github.com/daitonium/pdf_alchemist/backend/internal/pdf"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -36,11 +38,11 @@ func main() {
 		}
 
 		file, err := form.FileHeader.Open()
-		defer file.Close()
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
 			return
 		}
+		defer file.Close()
 
 		buf := bytes.NewBuffer(nil)
 

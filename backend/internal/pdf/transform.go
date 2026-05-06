@@ -149,7 +149,6 @@ func Transform(d Document) {
 		default:
 			continue
 		}
-
 	}
 
 }

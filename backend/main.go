@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/daitonium/pdf_alchemist/backend/internal/pdf"
 	"github.com/gin-gonic/gin"
@@ -13,6 +15,13 @@ import (
 )
 
 func main() {
+	// Load pg database and configuration
+	godotenv.Load()
+	dbURL := os.Getenv("DB_URL")
+	if dbURL == "" {
+		log.Fatal("Url must be set")
+	}
+
 	// Create a Gin router with default middleware (logger and recovery)
 	r := gin.Default()
 

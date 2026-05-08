@@ -2,9 +2,11 @@ package pdf
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"log"
 	"math"
+	"os"
 	"slices"
 	"strconv"
 
@@ -13,28 +15,55 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
-/* TODO:
-// 1. Linearly go through all the commands given of the pdf file and transform them
-// > Similar to the transformations in the UI
-// 2. For each one of the actions it should
-//		- know when to swap the previously deleted file and it's position of the group
-//		- create separate files for the split functionality
-//	  - for the main file add the separate file without the groups but with the swaps and deletions
-//		- NEVER modify the original file, add new ones and make copies of the original
-// 3. Once the transformations are complete return the files and send them to store in the file server separately
-// 4. the metadata will be saved onto the pg database with
-//		- the location of the files, the UUID link to the files, the command outputs
-*/
+func ProcessCommands(d Document) error {
+	// TODO:
+	// 1. After transforming the document, write output to the file server via gin
+	pdfManager, err := Transform(d)
+	if err != nil {
+		return err
+	}
+	filepath := ""
+	err = copyToPath(pdfManager.MainFile, filepath)
+	if err != nil {
+		return err
+	}
+	for _, group := range pdfManager.Groups {
+		err = copyToPath(group, filepath)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+	// 2. Save metadata to tables (also the json commands!)
+	// 3. return json response or error response
+}
 
-func Transform(d Document) {
+func copyToPath(buf *bytes.Buffer, filepath string) error {
+	file, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Transform(d Document) (PdfManager, error) {
 	cfg := model.NewDefaultConfiguration()
-	data, _ := io.ReadAll(d.File)
+	data, err := io.ReadAll(d.File)
+	if err != nil {
+	}
 	d.File.Seek(0, io.SeekStart)
 
 	pages, err := GenerateTotalPages(*cfg, bytes.NewReader(data))
 	if err != nil {
 		log.Println("")
-		return
+		return PdfManager{}, err
 	}
 
 	manager := PdfManager{
@@ -51,19 +80,19 @@ func Transform(d Document) {
 			pageExists := slices.ContainsFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.Page })
 			if !pageExists {
 				log.Println("Delete failed, cannot find page")
-				return
+				return PdfManager{}, errors.New("Delete failed, cannot find page")
 			}
 
 			updatedFile, err := Delete(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.Page)
 			if err != nil {
 				log.Println("Delete failed")
-				return
+				return PdfManager{}, errors.New("Could not delete Page")
 			}
 
 			idx := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.Page })
 			if idx == -1 {
-				log.Println("Delete Failed, the page does not exists")
-				return
+				log.Println("Delete Failed, couldn't find page index")
+				return PdfManager{}, errors.New("Delete Failed, couldn't find page index")
 			}
 			groups := manager.Pages[idx].GroupIds
 
@@ -71,7 +100,7 @@ func Transform(d Document) {
 				groupFile, err := Delete(*cfg, bytes.NewReader(manager.Groups[id].Bytes()), *cmd.Page)
 				if err != nil {
 					log.Println("Group File delete failed")
-					return
+					return PdfManager{}, err
 				}
 				manager.Groups[id] = groupFile
 			}
@@ -81,7 +110,7 @@ func Transform(d Document) {
 			newFile, err := SplitPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.StartCut, *cmd.EndCut)
 			if err != nil {
 				log.Println("Split failed")
-				return
+				return PdfManager{}, err
 			}
 			newId := uuid.New()
 			manager.Groups[newId] = newFile
@@ -101,7 +130,7 @@ func Transform(d Document) {
 			newFile, err := SwapPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), *cmd.PageA, *cmd.PageB)
 			if err != nil {
 				log.Println("Split failed")
-				return
+				return PdfManager{}, err
 			}
 			manager.MainFile = bytes.NewBuffer(newFile.Bytes())
 
@@ -110,7 +139,7 @@ func Transform(d Document) {
 			idxB := slices.IndexFunc(manager.Pages, func(p Page) bool { return p.PageNum == *cmd.PageB })
 			if idxA == -1 || idxB == -1 {
 				log.Println("The pages do not exist")
-				return
+				return PdfManager{}, errors.New("The Page does not exists")
 			}
 			groupsA := pages[idxA].GroupIds
 			groupsB := pages[idxB].GroupIds
@@ -142,7 +171,7 @@ func Transform(d Document) {
 				newFile, err := TrimPages(*cfg, bytes.NewReader(manager.MainFile.Bytes()), p)
 				if err != nil {
 					log.Println("The swap failed")
-					return
+					return PdfManager{}, err
 				}
 				manager.Groups[id] = newFile
 			}
@@ -150,7 +179,7 @@ func Transform(d Document) {
 			continue
 		}
 	}
-
+	return manager, nil
 }
 
 func GenerateTotalPages(cfg model.Configuration, doc *bytes.Reader) ([]Page, error) {
